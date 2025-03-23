@@ -18,6 +18,7 @@ const App = () => {
   const [indicatorData, setIndicatorData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dataAvailable, setDataAvailable] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Define the sustainable development indicator codes we're interested in
@@ -57,14 +58,26 @@ const App = () => {
         const response = await axios.get(
           "https://api.worldbank.org/v2/country?format=json&per_page=300"
         );
-        // Filter out aggregates and regions, keep only countries
-        const countryList = response.data[1].filter(
-          (country) => country.region.value !== "Aggregates"
-        );
-        setCountries(countryList);
+
+        // Check if response has the expected format
+        if (
+          response.data &&
+          Array.isArray(response.data) &&
+          response.data.length > 1
+        ) {
+          // Filter out aggregates and regions, keep only countries
+          const countryList = response.data[1].filter(
+            (country) => country.region && country.region.value !== "Aggregates"
+          );
+          setCountries(countryList);
+        } else {
+          console.error("Unexpected API response format:", response.data);
+          setError("Failed to parse countries data");
+        }
+
         setLoading(false);
       } catch (err) {
-        setError("Failed to fetch countries");
+        setError("Failed to fetch countries. Please try again later.");
         setLoading(false);
         console.error("Error fetching countries:", err);
       }
@@ -87,25 +100,77 @@ const App = () => {
 
   const fetchIndicatorData = async (country, indicator) => {
     setLoading(true);
+    setError(null); // Reset error state
+    setDataAvailable(true); // Reset data availability state
+
     try {
+      // Expanded date range to capture more historical data
       const response = await axios.get(
-        `https://api.worldbank.org/v2/country/${country}/indicator/${indicator}?format=json&per_page=60&date=2000:2022`
+        `https://api.worldbank.org/v2/country/${country}/indicator/${indicator}?format=json&per_page=100&date=2000:2024`
       );
 
-      if (response.data && response.data[1]) {
-        // Sort data by date in ascending order
-        const sortedData = response.data[1].sort(
-          (a, b) => parseInt(a.date) - parseInt(b.date)
-        );
-        setIndicatorData(sortedData);
-      } else {
-        setIndicatorData([]);
+      console.log(
+        `Data for ${country}, indicator ${indicator}:`,
+        response.data
+      );
+
+      // Check for pagination information
+      if (
+        response.data &&
+        Array.isArray(response.data) &&
+        response.data.length > 0
+      ) {
+        const metadata = response.data[0];
+        if (metadata.pages > 1) {
+          console.log(
+            `Note: Additional pages of data are available (${metadata.pages} total)`
+          );
+          // Consider implementing pagination handling here if needed
+        }
       }
+
+      if (
+        response.data &&
+        Array.isArray(response.data) &&
+        response.data.length > 1 &&
+        Array.isArray(response.data[1]) &&
+        response.data[1].length > 0
+      ) {
+        // Filter out null values and sort data by date in ascending order
+        const filteredData = response.data[1].filter(
+          (item) => item.value !== null
+        );
+
+        if (filteredData.length > 0) {
+          const sortedData = filteredData.sort(
+            (a, b) => parseInt(a.date) - parseInt(b.date)
+          );
+          setIndicatorData(sortedData);
+        } else {
+          console.log(
+            `No valid data points found for ${country}, indicator ${indicator}`
+          );
+          setIndicatorData([]);
+          setDataAvailable(false);
+        }
+      } else {
+        console.log(
+          `Empty or invalid response for ${country}, indicator ${indicator}`
+        );
+        setIndicatorData([]);
+        setDataAvailable(false);
+      }
+
       setLoading(false);
     } catch (err) {
-      setError(`Failed to fetch data for indicator ${indicator}`);
+      setError(`Failed to fetch data. Please try again later.`);
+      setDataAvailable(false);
+      setIndicatorData([]);
       setLoading(false);
-      console.error("Error fetching indicator data:", err);
+      console.error(
+        `Error fetching data for country ${country}, indicator ${indicator}:`,
+        err
+      );
     }
   };
 
@@ -127,6 +192,12 @@ const App = () => {
   // Filter countries based on search term
   const filteredCountries = countries.filter((country) =>
     country.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Get the current country and indicator objects
+  const currentCountry = countries.find((c) => c.id === selectedCountry);
+  const currentIndicator = indicators.find(
+    (ind) => ind.code === selectedIndicator
   );
 
   return (
@@ -154,11 +225,27 @@ const App = () => {
             selectedIndicator={selectedIndicator}
             onIndicatorChange={handleIndicatorChange}
           />
-          <DataVisualization
-            data={indicatorData}
-            indicator={indicators.find((ind) => ind.code === selectedIndicator)}
-            country={countries.find((c) => c.id === selectedCountry)}
-          />
+
+          {!dataAvailable ? (
+            <div className="no-data-message">
+              <p>
+                No data available for{" "}
+                {currentCountry ? currentCountry.name : "selected country"}
+                on{" "}
+                {currentIndicator
+                  ? currentIndicator.name
+                  : "selected indicator"}
+                .
+              </p>
+              <p>Try selecting a different country or indicator.</p>
+            </div>
+          ) : (
+            <DataVisualization
+              data={indicatorData}
+              indicator={currentIndicator}
+              country={currentCountry}
+            />
+          )}
         </>
       )}
     </div>

@@ -13,38 +13,22 @@ const DataVisualization = ({ data, indicator, country }) => {
   // Filter out entries with null values
   const validData = data.filter((item) => item.value !== null);
 
+  if (validData.length === 0) {
+    return (
+      <div className="no-data">
+        <p>
+          No valid data points available for the selected indicator and country.
+        </p>
+      </div>
+    );
+  }
+
   // Calculate the max value for scaling
-  const maxValue = Math.max(...validData.map((item) => item.value));
-
-  // If all values are 0 or invalid, set a default max
+  const maxValue = Math.max(
+    ...validData.map((item) => parseFloat(item.value) || 0)
+  );
+  // Use a minimum value to prevent flat charts
   const effectiveMaxValue = maxValue <= 0 ? 100 : maxValue;
-
-  const chartContainerStyle = {
-    marginTop: "20px",
-    padding: "20px",
-    backgroundColor: "#f9f9f9",
-    borderRadius: "8px",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-  };
-
-  const chartStyle = {
-    display: "flex",
-    height: "300px",
-    alignItems: "flex-end",
-    borderBottom: "2px solid #ddd",
-    borderLeft: "2px solid #ddd",
-    paddingTop: "20px",
-    gap: "5px", // Add space between bars
-  };
-
-  const barContainerStyle = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    flex: "1 0 auto",
-    minWidth: "30px",
-    maxWidth: "60px",
-  };
 
   // Get SDG color based on goal number
   const getSDGColor = (sdgNumber) => {
@@ -71,66 +55,35 @@ const DataVisualization = ({ data, indicator, country }) => {
     return sdgColors[sdgNumber] || "#888888";
   };
 
-  // Generate bars for chart
-  const generateBars = () => {
-    return validData.map((item, index) => {
-      // Make sure we have a positive height value by using Math.max
-      const heightPercentage = Math.max(
-        5,
-        (item.value / effectiveMaxValue) * 100
-      );
-
-      const barStyle = {
-        height: `${heightPercentage}%`, // Use percentage height
-        width: "80%",
-        backgroundColor: getSDGColor(indicator.sdg),
-        borderRadius: "4px 4px 0 0",
-        transition: "height 0.5s ease, background-color 0.3s ease",
-        position: "relative",
-        minHeight: "5px", // Ensure there's always at least a visible bar
-      };
-
-      const labelStyle = {
-        transform: "rotate(-45deg)",
-        fontSize: "12px",
-        marginTop: "8px",
-        whiteSpace: "nowrap",
-      };
-
-      const valueStyle = {
-        position: "absolute",
-        top: "-25px",
-        fontSize: "12px",
-        fontWeight: "bold",
-      };
-
-      return (
-        <div key={index} style={barContainerStyle} className="bar-container">
-          <div style={barStyle} className="data-bar">
-            <span style={valueStyle}>{item.value.toFixed(2)}</span>
-          </div>
-          <div style={labelStyle}>{item.date}</div>
-        </div>
-      );
-    });
-  };
-
   return (
-    <div style={chartContainerStyle}>
+    <div className="visualization-container">
       <h2>{indicator.name}</h2>
       <h3>Country: {country.name}</h3>
-      <div className="chart-container">
-        <div style={chartStyle} className="chart">
-          {generateBars()}
-        </div>
-        <div
-          className="axis-label"
-          style={{ textAlign: "center", marginTop: "30px" }}
-        >
-          Year
+
+      <div className="chart-outer-container">
+        <div className="chart-container">
+          {validData.map((item, index) => {
+            const value = parseFloat(item.value) || 0;
+            const height = (value / effectiveMaxValue) * 200; // 200px is max height
+
+            return (
+              <div className="bar-column" key={index}>
+                <div className="bar-value">{value.toFixed(2)}</div>
+                <div
+                  className="bar"
+                  style={{
+                    height: `${Math.max(height, 4)}px`,
+                    backgroundColor: getSDGColor(indicator.sdg),
+                  }}
+                ></div>
+                <div className="bar-label">{item.date}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
-      <div className="chart-legend" style={{ marginTop: "20px" }}>
+
+      <div className="chart-legend">
         <p>
           SDG {indicator.sdg} Indicator: {indicator.name}
         </p>
