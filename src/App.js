@@ -20,7 +20,7 @@ const App = () => {
   const [error, setError] = useState(null);
   const [dataAvailable, setDataAvailable] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-
+  //comment
   // Define the sustainable development indicator codes we're interested in
   const sdgIndicators = [
     {
