@@ -106,7 +106,7 @@ body {
 .bar-column:hover .bar {
   opacity: 0.8;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
-  width: 95%;
+  width: 94%;
 }
 
 .chart-legend {

@@ -23,7 +23,7 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
-  "homepage": "https://USERNAME.github.io/REPO_NAME",
+  "homepage": "https://tadewumi2.github.io/GreenCompetition",
   "browserslist": [
     ">0.2%",
     "not dead",
