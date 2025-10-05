@@ -72,7 +72,7 @@ const DataVisualization = ({ data, indicator, country }) => {
                 <div
                   className="bar"
                   style={{
-                    height: `${Math.max(height, 4)}px`,
+                    height: `${Math.max(height, 2)}px`,
                     backgroundColor: getSDGColor(indicator.sdg),
                   }}
                 ></div>

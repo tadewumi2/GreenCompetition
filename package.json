@@ -23,7 +23,7 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
-  "homepage": "https://tadewumi2.github.io/GreenCompetition",
+  "homepage": "https://tadewumi2.github.io/SDG-Tracker",
   "browserslist": [
     ">0.2%",
     "not dead",
